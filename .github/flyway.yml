@@ -1,0 +1,56 @@
+name: Migracoes Flyway
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+jobs:
+  flyway:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root123
+          MYSQL_DATABASE: loja
+          MYSQL_USER: app
+          MYSQL_PASSWORD: app123
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot123"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      FLYWAY_URL: jdbc:mysql://127.0.0.1:3306/loja?allowPublicKeyRetrieval=true&useSSL=false
+      FLYWAY_USER: app
+      FLYWAY_PASSWORD: app123
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Flyway migrate (banco vazio)
+        run: >
+          docker run --rm --network host
+          -e FLYWAY_URL -e FLYWAY_USER -e FLYWAY_PASSWORD -e FLYWAY_LOCATIONS
+          -v "$PWD/sql:/flyway/sql"
+          flyway/flyway:11 migrate
+
+      - name: Flyway validate
+        run: >
+          docker run --rm --network host
+          -e FLYWAY_URL -e FLYWAY_USER -e FLYWAY_PASSWORD -e FLYWAY_LOCATIONS
+          -v "$PWD/sql:/flyway/sql"
+          flyway/flyway:11 validate
+
+      - name: Flyway info
+        run: >
+          docker run --rm --network host
+          -e FLYWAY_URL -e FLYWAY_USER -e FLYWAY_PASSWORD -e FLYWAY_LOCATIONS
+          -v "$PWD/sql:/flyway/sql"
+          flyway/flyway:11 info
