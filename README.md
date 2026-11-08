@@ -65,6 +65,53 @@ sql/                 # migrações (V1__nome.sql, V2__nome.sql ...)
 - Nome: `V<número>__<descrição>.sql` (dois sublinhados).
 - Nunca editar uma migração já aplicada; criar uma nova versão.
 
+# Estudo de caso: loja virtual
+
+Banco de dados: `loja` (MySQL 8.4). Migrações gerenciadas pelo Flyway, arquivos em `sql/`.
+
+## Por que este domínio
+
+- Pequeno: 4 tabelas, fácil de explicar em um slide.
+- Tem relacionamentos (chaves estrangeiras), o que mostra a importância da **ordem** das migrações.
+- Evolui de forma natural: campos novos, dados que precisam ser transformados, índices, relatórios.
+
+## História de evolução do banco
+
+| Arquivo | O que muda | Motivo (para contar na apresentação) |
+|---|---|---|
+| `V1__criar_clientes_e_produtos` | Tabelas `clientes` e `produtos` | Lançamento da loja |
+| `V2__criar_pedidos_e_itens` | `pedidos` e `itens_pedido` (com chaves estrangeiras) | A loja passa a vender |
+| `V3__inserir_dados_iniciais` | Clientes, produtos e pedidos de exemplo | Ambiente de desenvolvimento com dados |
+| `V4__adicionar_email_clientes` | Coluna `email` em `clientes` | Marketing quer contatar os clientes |
+| `V5__separar_nome_sobrenome` | `nome` vira `nome` + `sobrenome`, preservando os dados | Nota fiscal exige o sobrenome separado (**migração de dados**) |
+| `V6__criar_indices` | Índices em `pedidos.data_pedido` e `clientes.email` | Consultas por data e por e-mail ficaram lentas |
+| `R__view_resumo_pedidos` | View `vw_resumo_pedidos` | Relatório que muda com frequência (**migração repetível**) |
+
+## Versões reservadas (V7 em diante)
+
+Ficam livres para os cenários avançados da demonstração:
+
+- Erro de checksum (editar uma migração já aplicada e rodar `validate`).
+- Conflito de versão entre duas branches (duas pessoas criando a mesma V7).
+- Falha no meio de uma migração (no MySQL não há DDL transacional, o banco fica parcialmente alterado).
+- Reversão sem a edição paga do Flyway (migração corretiva).
+- Adoção em um banco já existente (`baseline`).
+
+## Regras do time
+
+- Nome dos arquivos: `V<número>__<descrição>.sql` (dois sublinhados).
+- **Nunca editar uma migração já aplicada.** Para mudar algo, criar uma nova versão.
+- Uma migração por commit, com mensagem no formato `feat: V4 adiciona email em clientes`.
+- Antes de criar uma migração, conferir no repositório qual é o próximo número livre.
+
+## Divisão de tarefas
+
+| Integrante | Migrações |
+|---|---|
+| (nome) | V1 e V2 |
+| (nome) | V3 e V4 |
+| (nome) | V5, V6 e `R__view_resumo_pedidos` |
+
 ## Problemas comuns
 
 - **Erro `dockerDesktopLinuxEngine`:** abra o Docker Desktop e espere iniciar.
